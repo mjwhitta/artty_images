@@ -1,6 +1,8 @@
-# What is this?
+# ArTTY images
 
-<a href="https://www.buymeacoffee.com/mjwhitta">🍪 Buy me a cookie</a>
+[![Yum](https://img.shields.io/badge/-Buy%20me%20a%20cookie-blue?style=for-the-badge&logo=cookiecutter)](https://www.buymeacoffee.com/mjwhitta)
+
+## What is this?
 
 This repo contains images or scripts that grab images. These images
 are then processed by [ArTTY](https://github.com/mjwhitta/artty).
