@@ -1,0 +1,143 @@
+#!/usr/bin/env bash
+
+### Helpers begin
+check_deps() {
+    local missing
+    for d in "${deps[@]}"; do
+        if [[ -z $(command -v "$d") ]]; then
+            # Force absolute path
+            if [[ ! -e "/$d" ]]; then
+                err "$d was not found"
+                missing="true"
+            fi
+        fi
+    done; unset d
+    [[ -z $missing ]] || exit 128
+}
+err() { echo -e "${color:+\e[31m}[!] $*${color:+\e[0m}" >&2; }
+errx() { err "${*:2}"; exit "$1"; }
+good() { echo -e "${color:+\e[32m}[+] $*${color:+\e[0m}"; }
+info() { echo -e "${color:+\e[37m}[*] $*${color:+\e[0m}"; }
+long_opt() {
+    local arg shift="0"
+    case "$1" in
+        "--"*"="*) arg="${1#*=}"; [[ -n $arg ]] || return 127 ;;
+        *) shift="1"; shift; [[ $# -gt 0 ]] || return 127; arg="$1" ;;
+    esac
+    echo "$arg"
+    return "$shift"
+}
+subinfo() { echo -e "${color:+\e[36m}[=] $*${color:+\e[0m}"; }
+warn() { echo -e "${color:+\e[33m}[-] $*${color:+\e[0m}"; }
+### Helpers end
+
+list_sprites() {
+    local keep
+    local line
+
+    while read -r line; do
+        if [[ -n $sect ]]; then
+            case "${line,,}" in
+                *"sect-name"*"title=\"${sect,,}\""*)
+                    keep="true";
+                    continue
+                    ;;
+                *"sect-name"*"title="*) unset keep; continue ;;
+            esac
+        else
+            case "${line,,}" in
+                *"sect-name"*"title="*) keep="true"; continue ;;
+            esac
+        fi
+
+        [[ -n $keep ]] || continue
+
+        case "${line,,}" in
+            *"zip-icon"*) ;; # Ignore
+            *"commentheader"*) return 0 ;; # Comments section
+            *"iconheadertext"*)
+                line="${line#*\>}"
+                line="${line%\<*}"
+                line="${line//\&amp;/and}"
+                line="${line//\//or}"
+                line="${line//\'/}"
+                line="${line//\(/}"
+                line="${line//\)/}"
+                line="${line//,/}"
+                line="${line// /_}"
+                echo -n "${line,,}|"
+                ;;
+            *"img src"*)
+                line="${line#*\"}"
+                line="${line%\?*}"
+                echo "$line"
+                ;;
+        esac
+    done < <(curl -kLs "$url/$game"); unset line
+}
+
+usage() {
+    cat <<EOF
+Usage: ${0##*/} [OPTIONS] <console/game> [section]
+
+DESCRIPTION
+    Get sprite sheets from https://spriters-resource.com.
+
+OPTIONS
+    -h, --help        Display this help message
+        --no-color    Disable colorized output
+
+EOF
+    exit "$1"
+}
+
+declare -a args
+unset help
+color="true"
+
+# Parse command line options
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        "--") shift; args+=("$@"); break ;;
+        "-h"|"--help") help="true" ;;
+        "--no-color") unset color ;;
+        *) args+=("$1") ;;
+    esac
+    case "$?" in
+        0) ;;
+        1) shift ;;
+        *) usage "$?" ;;
+    esac
+    shift
+done
+[[ ${#args[@]} -eq 0 ]] || set -- "${args[@]}"
+
+# Help info
+[[ -z $help ]] || usage 0
+
+# Check for missing dependencies
+declare -a deps
+deps+=("curl")
+check_deps
+
+# Check for valid params
+[[ $# -gt 0 ]] || usage 1
+[[ $# -le 2 ]] || usage 1
+
+game="$1"
+sect="$2"
+url="https://spriters-resource.com"
+
+while read -r img; do
+    ext="png"
+    case "${img,,}" in
+        *".gif") ext="gif" ;;
+        *".jpeg"|*".jpg") ext="jpg" ;;
+    esac
+
+    path="${img##*\|}"
+
+    good "${img%\|*}"
+    curl -kLs "$url$path" >"${img%\|*}.$ext"
+    curl -kLs "$url${path/sheet_icon/sheet}" >"${img%\|*}_sheet.$ext"
+done < <(list_sprites); unset img

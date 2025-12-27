@@ -1,0 +1,143 @@
+#!/usr/bin/env bash
+
+### Helpers begin
+check_deps() {
+    local missing
+    for d in "${deps[@]}"; do
+        if [[ -z $(command -v "$d") ]]; then
+            # Force absolute path
+            if [[ ! -e "/$d" ]]; then
+                err "$d was not found"
+                missing="true"
+            fi
+        fi
+    done; unset d
+    [[ -z $missing ]] || exit 128
+}
+err() { echo -e "${color:+\e[31m}[!] $*${color:+\e[0m}" >&2; }
+errx() { err "${*:2}"; exit "$1"; }
+good() { echo -e "${color:+\e[32m}[+] $*${color:+\e[0m}"; }
+info() { echo -e "${color:+\e[37m}[*] $*${color:+\e[0m}"; }
+long_opt() {
+    local arg shift="0"
+    case "$1" in
+        "--"*"="*) arg="${1#*=}"; [[ -n $arg ]] || return 127 ;;
+        *) shift="1"; shift; [[ $# -gt 0 ]] || return 127; arg="$1" ;;
+    esac
+    echo "$arg"
+    return "$shift"
+}
+subinfo() { echo -e "${color:+\e[36m}[=] $*${color:+\e[0m}"; }
+warn() { echo -e "${color:+\e[33m}[-] $*${color:+\e[0m}"; }
+### Helpers end
+
+usage() {
+    cat <<EOF
+Usage: ${0##*/} [OPTIONS] <sheet> <map>
+
+DESCRIPTION
+    This will take a sprite sheet and text sprite map from
+    https://www.leshylabs.com/apps/sstool and split it into separate
+    files.
+
+OPTIONS
+    -h, --help          Display this help message
+        --no-color      Disable colorized output
+    -o, --output=STR    Directory for created files (default: sprites)
+    -p, --prefix=STR    Prefix for created files
+
+EOF
+    exit "$1"
+}
+
+declare -a args
+unset help prefix
+color="true"
+output="sprites"
+
+# Parse command line options
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        "--") shift; args+=("$@"); break ;;
+        "-h"|"--help") help="true" ;;
+        "--no-color") unset color ;;
+        "-o"|"--output"*) output="$(long_opt "$@")" ;;
+        "-p"|"--prefix"*) prefix="$(long_opt "$@")" ;;
+        *) args+=("$1") ;;
+    esac
+    case "$?" in
+        0) ;;
+        1) shift ;;
+        *) usage "$?" ;;
+    esac
+    shift
+done
+[[ ${#args[@]} -eq 0 ]] || set -- "${args[@]}"
+
+# Help info
+[[ -z $help ]] || usage 0
+
+# Check for missing dependencies
+declare -a deps
+deps+=("magick")
+check_deps
+
+# Check for valid params
+[[ $# -eq 2 ]] || usage 1
+
+[[ -f "$1" ]] || errx 2 "sprite sheet $1 not found"
+[[ -f "$2" ]] || errx 2 "sprite map $2 not found"
+
+mkdir -p "$output"
+
+count="0"
+while read -r line; do
+    unset name height width x y
+
+    ((count+=1))
+    [[ -n $line ]] || continue
+
+    name="$prefix${line%%,*}.png"
+    line="${line#*,}"
+
+    x="${line%%,*}"
+    line="${line#*,}"
+
+    y="${line%%,*}"
+    line="${line#*,}"
+
+    width="${line%%,*}"
+    height="${line#*,}"
+
+    if [[ -z $name ]]; then
+        warn"No name for line #$count"
+        continue
+    fi
+
+    if [[ -z $height ]]; then
+        warn"No height for $name"
+        continue
+    fi
+
+    if [[ -z $width ]]; then
+        warn"No width for $name"
+        continue
+    fi
+
+    if [[ -z $x ]]; then
+        warn"No x coordinate for $name"
+        continue
+    fi
+
+    if [[ -z $y ]]; then
+        warn"No y coordinate for $name"
+        continue
+    fi
+
+    if magick "$1" -crop "${width}x$height+$x+$y" "$output/$name"
+    then
+        good "$name"
+    else
+        err "$name"
+    fi
+done < <(cat "$2"; echo); unset line

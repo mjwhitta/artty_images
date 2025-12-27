@@ -5,12 +5,10 @@
 ## What is this?
 
 This repo contains images or scripts that grab images. These images
-are then processed by [ArTTY](https://github.com/mjwhitta/artty).
+are then processed by [ArTTY](https://github.com/mjwhitta/artty) and
+stored in [artty_json](https://github.com/mjwhitta/artty_json).
 
-99.9% of these images are not my own. I've created a handful myself.
-Over the years of collecting I have lost track of where most of them
-have come from. If you find your artwork here and want credit, please
-let me know.
+**Note:** The images here may be reorganized or replaced as I see fit.
 
 ## TODO
 
@@ -26,6 +24,7 @@ let me know.
         - Ganondorf
         - Link
         - Zelda
+    - Games
     - Maybe more poses
 - Linux
     - Gentoo
@@ -45,10 +44,35 @@ let me know.
     - Gen IV and up... maybe...
 - Portal
     - Atlas
-    - Chell
     - Peabody
     - Turret
 - Street Fighter
     - Maybe more poses
+- Super Smash Bros
 - Transformers
 - Voltron
+
+## Credits for sprites
+
+99.9% of these images are not my own. I've created a handful myself.
+Over the years of collecting I have lost track of where many of them
+have come from. Some came from https://www.spriters-resource.com. Most
+of the Pokemon sprites are from https://bulbapedia.bulbagarden.net. If
+you find your artwork here and want credit, please let me know. Below
+is an incomplete list:
+
+- Boo
+- Dazz
+- Dragonrod
+- Ectevy
+- Funky Fresh Fellow
+- Mega_leo
+- Ragengow
+- Rayquane KnackXeno
+- SkylaDoragono
+- SmithGCN
+- Stay Retro
+- Supurreme
+- Terrorfull_Catomizer
+- Urathros
+- Yawackhary

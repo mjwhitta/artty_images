@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# shellcheck disable=SC2140
+# shellcheck disable=SC2317
 
 ### Helpers begin
 check_deps() {
@@ -16,10 +16,10 @@ check_deps() {
     done; unset d
     [[ -z $missing ]] || exit 128
 }
-err() { echo -e "${color:+\e[31m}[!] $*\e[0m"; }
+err() { echo -e "${color:+\e[31m}[!] $*${color:+\e[0m}" >&2; }
 errx() { err "${*:2}"; clean "$1"; }
-good() { echo -e "${color:+\e[32m}[+] $*\e[0m"; }
-info() { echo -e "${color:+\e[37m}[*] $*\e[0m"; }
+good() { echo -e "${color:+\e[32m}[+] $*${color:+\e[0m}"; }
+info() { echo -e "${color:+\e[37m}[*] $*${color:+\e[0m}"; }
 long_opt() {
     local arg shift="0"
     case "$1" in
@@ -27,10 +27,10 @@ long_opt() {
         *) shift="1"; shift; [[ $# -gt 0 ]] || return 127; arg="$1" ;;
     esac
     echo "$arg"
-    return $shift
+    return "$shift"
 }
-subinfo() { echo -e "${color:+\e[36m}[=] $*\e[0m"; }
-warn() { echo -e "${color:+\e[33m}[-] $*\e[0m"; }
+subinfo() { echo -e "${color:+\e[36m}[=] $*${color:+\e[0m}"; }
+warn() { echo -e "${color:+\e[33m}[-] $*${color:+\e[0m}"; }
 ### Helpers end
 
 ### Parallel helpers begin
@@ -57,7 +57,7 @@ check_resume_file() {
                 "c") clean 0 ;;
                 "n") write_resume_file; break ;;
                 "q") exit 0 ;;
-                "y") read_resume_file; resume="--resume"; break ;;
+                "y") read_resume_file; resume="true"; break ;;
                 *) echo "Invalid response, try again!" ;;
             esac
         done
@@ -95,14 +95,15 @@ usage() {
 Usage: ${0##*/} [OPTIONS] <image1>... [imageN]
 
 DESCRIPTION
-    Add dimensions to image filename.
+    Automate some common tasks.
 
 OPTIONS
     -a, --autocrop       Autocrop images
     -h, --help           Display this help message
+    -n, --names          Add dimensions to filenames
     --no-color           Disable colorized output
     -r, --resume         Resume from a previous run
-    -s, --size=SIZE      Specify pixel size (default: 1)
+    -s, --size=SIZE      Specify sq pixel size for -n (default: 1)
     -t, --threads=NUM    Use specified number of threads (default: 32)
     -v, --verbose        Do not hide parallel errors
 
@@ -119,7 +120,7 @@ write_resume_file() {
 }
 
 declare -a args
-unset autocrop help pixel_size
+unset autocrop help names pixel_size resume verbose
 color="true"
 parallel="true"
 threads="32"
@@ -130,8 +131,9 @@ while [[ $# -gt 0 ]]; do
         "--") shift; args+=("$@"); break ;;
         "-a"|"--autocrop") autocrop="true" ;;
         "-h"|"--help") help="true" ;;
+        "-n"|"--names") names="true" ;;
         "--no-color") unset color ;;
-        "-r"|"--resume") resume="--resume" ;;
+        "-r"|"--resume") resume="true" ;;
         "-s"|"--size"*) pixel_size="$(long_opt "$@")" ;;
         "-t"|"--threads"*) threads="$(long_opt "$@")" ;;
         "-v"|"--verbose") verbose="true" ;;
@@ -140,7 +142,7 @@ while [[ $# -gt 0 ]]; do
     case "$?" in
         0) ;;
         1) shift ;;
-        *) usage $? ;;
+        *) usage "$?" ;;
     esac
     shift
 done
@@ -151,9 +153,11 @@ done
 
 # Check for missing dependencies
 declare -a deps
+deps+=("awk")
 deps+=("convert")
 deps+=("jq")
 deps+=("perl")
+deps+=("sha256sum")
 check_deps
 
 # Check for valid params
@@ -175,7 +179,8 @@ if [[ -n $parallel ]] && [[ ! -f "$HOME/.parallel/will-cite" ]]; then
     unset pvers
 fi
 
-# TODO Save command line args
+# Save command line args
+# TODO
 
 # Cache variables
 hash="$(pwd | sha256sum | awk '{print $1}')"
@@ -214,17 +219,24 @@ cat >"$script" <<EOF
 
 ### Helpers begin
 set -o noglob
-err() { echo -e "\r${color:+\e[31m}[!] \$*\e[0m\e[K"; }
+err() { echo -e "\r${color:+\e[31m}[!] \$*${color:+\e[0m}\e[K" >&2; }
 errx() { err "\${*:2}"; exit "\$1"; }
-good() { echo -e "\r${color:+\e[32m}[+] \$*\e[0m\e[K"; }
-info() { echo -e "\r${color:+\e[37m}[*] \$*\e[0m\e[K"; }
-subinfo() { echo -e "\r${color:+\e[36m}[=] \$*\e[0m\e[K"; }
-warn() { echo -e "\r${color:+\e[33m}[-] \$*\e[0m\e[K"; }
+good() { echo -e "\r${color:+\e[32m}[+] \$*${color:+\e[0m}\e[K"; }
+info() { echo -e "\r${color:+\e[37m}[*] \$*${color:+\e[0m}\e[K"; }
+msg() { echo -e "\r\$*\e[K"; }
+subinfo() { echo -e "\r${color:+\e[36m}[=] \$*${color:+\e[0m}\e[K"; }
+warn() { echo -e "\r${color:+\e[33m}[-] \$*${color:+\e[0m}\e[K"; }
 ### Helpers end
 
 [[ -f "\$1" ]] || err "Image \$1 does not exist"
 
+${autocrop:+info "Autocropping \$1"}
 ${autocrop:+convert -trim "\$1" "\$1"}
+
+if [[ "x$names" == "x" ]]; then
+    exit 0
+fi
+
 size="\$(
     convert "\$1" txt:- 2>/dev/null | head -n 1 | \\
     perl -lne '/ ([0-9]+),([0-9]+),/ && print "\$1x\$2"'
@@ -238,7 +250,7 @@ if [[ "x$pixel_size" != "x" ]]; then
     size="\${width}x\$height"
 fi
 
-info "Fixing \$1"
+info "Renaming \$1"
 mv "\$1" "\${1%.png}_\$size.png"
 EOF
 chmod 700 "$script"
@@ -246,7 +258,7 @@ chmod 700 "$script"
 # Run sub-script
 if [[ -n $parallel ]]; then
     parallel -a "$dataset" --bar --joblog ${resume:++}"$joblog" --lb \
-        -P "$threads" -r $resume "$script" {}
+        -P "$threads" -r ${resume:+--resume} "$script" {}
     [[ -n $verbose ]] || echo -en "\e[1A\e[K" >&2
 else
     count="1"
