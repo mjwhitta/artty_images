@@ -15,8 +15,11 @@ stored in [artty_json](https://github.com/mjwhitta/artty_json).
 - DC
     - Batman
     - Justice League
-    - So many...
+    - etc...
 - Final Fantasy
+    - VII
+    - IX
+    - etc...
 - Gundam
 - Legend of Zelda
     - Characters
@@ -25,7 +28,6 @@ stored in [artty_json](https://github.com/mjwhitta/artty_json).
         - Link
         - Zelda
     - Games
-    - Maybe more poses
 - Linux
     - Gentoo
     - OpenSUSE
@@ -34,7 +36,7 @@ stored in [artty_json](https://github.com/mjwhitta/artty_json).
     - Spider-Man
     - Venom
     - X-Men
-    - So many...
+    - etc...
 - Mega-Man
     - Fix some Battle-Network sprites
     - Oldschool
@@ -46,11 +48,6 @@ stored in [artty_json](https://github.com/mjwhitta/artty_json).
     - Atlas
     - Peabody
     - Turret
-- Street Fighter
-    - Maybe more poses
-- Super Smash Bros
-- Transformers
-- Voltron
 
 ## Credits for sprites
 
