@@ -53,16 +53,17 @@ stored in [artty_json](https://github.com/mjwhitta/artty_json).
 
 99.9% of these images are not my own. I've created a handful myself.
 Over the years of collecting I have lost track of where many of them
-have come from. Some came from https://www.spriters-resource.com. Most
-of the Pokemon sprites are from https://bulbapedia.bulbagarden.net. If
-you find your artwork here and want credit, please let me know. Below
-is an incomplete list:
+have come from. If you find your artwork here and want credit, please
+let me know. Below is an incomplete list:
 
 - Boo
 - Dazz
 - Dragonrod
 - Ectevy
 - Funky Fresh Fellow
+- https://bulbapedia.bulbagarden.net
+- https://monsterhunter.fandom.com
+- https://www.spriters-resource.com
 - Mega_leo
 - Ragengow
 - Rayquane KnackXeno
